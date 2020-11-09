@@ -59,7 +59,7 @@ def amount_owed_per_receipt(data_dict):
     """
     shared_items = data_dict['total_price'] - \
         data_dict['payor_item_total'] - data_dict['non_payor_item_total']
-    owed = (shared_items/2) + data_dict['non_payor_item_total']
+    owed = (shared_items / 2) + data_dict['non_payor_item_total']
     return {data_dict['payor']: owed}
 
 
@@ -75,13 +75,18 @@ def amount_owed_total(data_dict, rent_amount=2000, who_pays_rent='Hannah'):
     """
     totals = dict(functools.reduce(operator.add,
                                    map(collections.Counter, data_dict)))
-    non_payor_owed = rent_amount/2 + totals[who_pays_rent] - totals['Landon']
+    non_payor_owed = rent_amount / 2 + totals[who_pays_rent] - totals['Landon']
     return non_payor_owed
 
+
 # Routes
+@app.route('/')
+def home():
+    return "Hello"
 
 
 @app.route('/api/v1/all', methods=['GET'])
+@basic_auth.required
 def api_all():
     return jsonify(data)
 
@@ -112,6 +117,7 @@ def api_add_item():
 
 
 @app.route('/api/v1/amount_owed', methods=['GET'])
+@basic_auth.required
 def api_get_results():
     month = int(request.args.get('month'))
     year = int(request.args.get('year'))
