@@ -46,7 +46,7 @@ def validate(data_dict):
         return "Non-Payor item total needs to be a float or an integer"
 
 
-def amount_owed_per_receipt(data_dict):
+def calculateAmountOwedPerReceipt(data_dict):
     """Calculates the amount owed to the payor of each receipt
 
     Args:
@@ -57,32 +57,32 @@ def amount_owed_per_receipt(data_dict):
         Dictionary: Returns a dictionary with key value pairs of Payor: Amount owed
         per receipt.
     """
-    shared_items = data_dict['total_price'] - \
+    sharedItems = data_dict['total_price'] - \
         data_dict['payor_item_total'] - data_dict['non_payor_item_total']
-    owed = (shared_items / 2) + data_dict['non_payor_item_total']
+    owed = (sharedItems / 2) + data_dict['non_payor_item_total']
     return {data_dict['payor']: owed}
 
 
-def amount_owed_total(data_dict, rent_amount=2000, who_pays_rent='Hannah'):
+def amountOwedPerMonth(data_dict):
     """Calculates the total amount owed from the non-rent payor to the rent payor
 
     Args:
         data_dict (dictionary): Dictionary with key value pairs of Payor: Amount owed
         for each receipt in a given month, year
-        rent_amount (float): How much is your rent. Takes a float or integer value.
-        who_pays_rent (String): Name of the person who will be paying the rent. This way
-        the function can calculate with respect to whom the returns need to be estimated.
     """
-    totals = dict(functools.reduce(operator.add,
-                                   map(collections.Counter, data_dict)))
-    non_payor_owed = rent_amount / 2 + totals[who_pays_rent] - totals['Landon']
-    return non_payor_owed
+    totalRent = 1854
+    whoPaidRent = 'Hannah'
+    totalAmountOwed = dict(functools.reduce(operator.add,
+                                            map(collections.Counter, data_dict)))
+    amountOwedByNonRentPayor = (totalRent) / \
+        (2 + totalAmountOwed[whoPaidRent] - totalAmountOwed['Landon'])
+    return amountOwedByNonRentPayor
 
 
 # Routes
 @app.route('/')
 def home():
-    return "Hello"
+    return "Hello. Endpoints are: /api/v1/ . . . [all, submit, amount_owed]"
 
 
 @app.route('/api/v1/all', methods=['GET'])
@@ -117,20 +117,20 @@ def api_add_item():
 
 
 @app.route('/api/v1/amount_owed', methods=['GET'])
-@basic_auth.required
 def api_get_results():
-    month = int(request.args.get('month'))
-    year = int(request.args.get('year'))
+    monthYearRequested = request.args.get('month')
+    year = int(monthYearRequested[0:4])
+    month = int(monthYearRequested[5:7])
 
-    dt = []
+    amountOwedPerReceiptData = []
 
     for i, val in enumerate(data['receipts']):
         if (val['month'] == month) & (val['year'] == year):
-            dt.append(amount_owed_per_receipt(val))
+            amountOwedPerReceiptData.append(calculateAmountOwedPerReceipt(val))
         else:
             return "That Month/Year combination is not in the data"
 
-    results = amount_owed_total(dt)
+    results = amountOwedPerMonth(amountOwedPerReceiptData)
 
     return ("For the month of " + str(month) + "/" + str(year) + ": \n" +
-            "Hannah is owed: " + "$" + str(results))
+            "Hannah is owed: " + "$" + str(round(results, 2)))
